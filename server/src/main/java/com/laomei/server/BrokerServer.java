@@ -78,6 +78,7 @@ public class BrokerServer {
         server.createTask("test",
                 Utils.convertObjToJsonByteArr("hello world", "key"));
         LOG.info("finished creating task...");
+        server.createTask("test2", Utils.convertObjToJsonByteArr("hi", "key"));
         TimeUnit.SECONDS.sleep(3000);
     }
 }

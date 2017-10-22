@@ -4,6 +4,7 @@ import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.recipes.cache.PathChildrenCache;
 import org.apache.curator.framework.recipes.cache.PathChildrenCacheEvent;
+import org.apache.curator.framework.recipes.cache.PathChildrenCacheListener;
 import org.apache.curator.retry.ExponentialBackoffRetry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,6 +43,7 @@ public class BrokerClient {
             case CHILD_ADDED:
                 LOG.info("child add; node path: {}", event.getData().getPath());
                 lockAndWork(client, event);
+                addLockListener(client, event.getData().getPath());
                 break;
             case CHILD_REMOVED:
                 LOG.info("child removed; node path: {}", event.getData().getPath());
@@ -52,6 +54,35 @@ public class BrokerClient {
 
     public void close() {
         zkClient.close();
+    }
+
+    private void addLockListener(CuratorFramework zkClient, String path) throws Exception {
+        PathChildrenCache childrenCache = new PathChildrenCache(zkClient, path, true);
+        childrenCache.start();
+        childrenCache.getListenable().addListener((client, event) -> {
+            switch (event.getType()) {
+            case CHILD_ADDED:
+                break;
+            case CHILD_REMOVED:
+                LOG.info("task lock is removed. node path: {}", event.getData().getPath());
+                restartTask(zkClient, event.getData().getPath());
+                break;
+            }
+        });
+    }
+
+    private void restartTask(CuratorFramework zkClient, String path) {
+        String NodeFather = Utils.subStrBeforeLastChar(path, '/');
+        if (!tryLock(zkClient, path)) {
+            LOG.info("lock task failed. node path: {}", path);
+            return;
+        }
+        try {
+            byte[] data = zkClient.getData().forPath(NodeFather);
+            createTask(data);
+        } catch (Exception e) {
+            LOG.error("restart task failed. node path: {}", NodeFather, e);
+        }
     }
 
     private void lockAndWork(CuratorFramework zkClient, PathChildrenCacheEvent event) {

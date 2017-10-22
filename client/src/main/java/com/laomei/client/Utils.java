@@ -23,4 +23,9 @@ public class Utils {
         object.put(key, o);
         return object.toJSONString().getBytes();
     }
+
+    public static String subStrBeforeLastChar(String oldStr, char ch) {
+        int idx = oldStr.lastIndexOf(ch);
+        return oldStr.substring(0, idx);
+    }
 }
