@@ -1,9 +1,3 @@
-/*
- * Utils.java
- * Copyright 2017 Qunhe Tech, all rights reserved.
- * Qunhe PROPRIETARY/CONFIDENTIAL, any form of usage is subject to approval.
- */
-
 package com.laomei.server;
 
 import com.alibaba.fastjson.JSONObject;
